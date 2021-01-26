@@ -11,7 +11,11 @@ function setup() {
   width = windowWidth * 2 / 3;
   height = windowHeight * 2 / 3;
   goal = new Vec(width / 2, height / 2);
-  vp = new ViewPoint(goal.copy(), PI * 1.5);
+  vpList = []
+  while(true){
+    vpList.push(new ViewPoint(new Vec(random(0, width), random(0, height)), random(0, 2 * PI)));
+    if(vpList.length >= 5) break;
+  }
   createCanvas(width, height);
 }
 
@@ -80,116 +84,131 @@ function draw() {
   strokeWeight(20);
   point(goal.x, goal.y);
 
-  // 绘制自走点
-  stroke('#0000ff');
-  point(vp.pos.x, vp.pos.y);
+  for(let vp of vpList){
+    // 绘制自走点
+    stroke('#0000ff');
+    point(vp.pos.x, vp.pos.y);
 
-  // 自走点前方视线
-  let viewLine = Ray.getRayFromPoints(
-    vp.pos,
-    vp.pos.move(30, vp.angle)
-  )
+    // 自走点前方视线
+    let viewLine = Ray.getRayFromPoints(
+      vp.pos,
+      vp.pos.move(30, vp.angle)
+    )
 
-  // 自走点左侧视线
-  let leftViewLine = Ray.getRayFromPoints(
-    vp.pos,
-    vp.pos.move(30, vp.angle - PI / 6)
-  )
+    // 自走点左侧视线
+    let leftViewLine = Ray.getRayFromPoints(
+      vp.pos,
+      vp.pos.move(30, vp.angle - PI / 6)
+    )
 
-  // 自走点右侧视线
-  let rightViewLine = Ray.getRayFromPoints(
-    vp.pos,
-    vp.pos.move(30, vp.angle + PI / 6)
-  )
+    // 自走点右侧视线
+    let rightViewLine = Ray.getRayFromPoints(
+      vp.pos,
+      vp.pos.move(30, vp.angle + PI / 6)
+    )
 
-  // 自走点左侧传感器
-  let leftSensor = Ray.getRayFromPoints(
-    vp.pos,
-    vp.pos.move(50, vp.angle - PI / 3)
-  )
+    // 自走点左侧传感器
+    let leftSensor = Ray.getRayFromPoints(
+      vp.pos,
+      vp.pos.move(50, vp.angle - PI / 6)
+    )
 
-  // 自走点右侧传感器
-  let rightSensor = Ray.getRayFromPoints(
-    vp.pos,
-    vp.pos.move(50, vp.angle + PI / 3)
-  )
+    // 自走点右侧传感器
+    let rightSensor = Ray.getRayFromPoints(
+      vp.pos,
+      vp.pos.move(50, vp.angle + PI / 6)
+    )
 
-  // 用左传感器探测墙壁
-  let leftNoIntersection = true;
-  for(let wall of wallList){
-    if(leftSensor.intersection(wall) != null){
-      leftNoIntersection = false;
-      break;
-    }
-  }
-
-  // 用右传感器探测墙壁
-  let rightNoIntersection = true;
-  for(let wall of wallList){
-    if(rightSensor.intersection(wall) != null){
-      rightNoIntersection = false;
-      break;
-    }
-  }
-
-  // 用视线探测墙壁
-  let forwardNoIntersection = true;
-  for(let wall of wallList){
-    if(viewLine.intersection(wall) != null){
-      forwardNoIntersection = false;
-      break;
-    }
-    if(leftViewLine.intersection(wall) != null){
-      forwardNoIntersection = false;
-      break;
-    }
-    if(rightViewLine.intersection(wall) != null){
-      forwardNoIntersection = false;
-      break;
-    }
-  }
-
-  // 调整自走点视线角度并前进
-  let goalWayVector = Ray.getRayFromPoints(vp.pos, goal).way;
-  if(goalWayVector.mag() > 20){
-    if(!forwardNoIntersection){
-      if(leftNoIntersection == rightNoIntersection){
-        vp.angle += PI / 30 * random([-1, 1]);
-      } else if(!leftNoIntersection){
-        vp.angle += PI / 30
-      } else if(!rightNoIntersection){
-        vp.angle -= PI / 30
+    // 用左传感器探测墙壁
+    let leftNoIntersection = true;
+    for(let wall of wallList){
+      if(leftSensor.intersection(wall) != null){
+        leftNoIntersection = false;
+        break;
       }
-    } else{
-      if(1 - vp.viewLineUnitVector.dotProduct(goalWayVector.unitize()) > 0.01){
-        let dRadian = goalWayVector.angle - vp.angle;
-        let clockwiseRotation = dRadian / abs(dRadian);
-        if(abs(dRadian) <= PI){
-          if(clockwiseRotation == 1 && rightNoIntersection
-            || clockwiseRotation == -1 && leftNoIntersection){
-            vp.angle += clockwiseRotation * PI / 30;
-          }
-        } else{
-          if(clockwiseRotation == -1 && rightNoIntersection
-            || clockwiseRotation == 1 && leftNoIntersection){
-            vp.angle -= clockwiseRotation * PI / 30;
-          }
-          if(vp.angle >= 2 * PI){
-            vp.angle -= 2 * PI;
-          }
-          if(vp.angle < 0){
-            vp.angle += 2 * PI;
+    }
+
+    // 用右传感器探测墙壁
+    let rightNoIntersection = true;
+    for(let wall of wallList){
+      if(rightSensor.intersection(wall) != null){
+        rightNoIntersection = false;
+        break;
+      }
+    }
+
+    // 用视线探测墙壁
+    let forwardNoIntersection = true;
+    for(let wall of wallList){
+      if(viewLine.intersection(wall) != null){
+        forwardNoIntersection = false;
+        break;
+      }
+      if(leftViewLine.intersection(wall) != null){
+        forwardNoIntersection = false;
+        break;
+      }
+      if(rightViewLine.intersection(wall) != null){
+        forwardNoIntersection = false;
+        break;
+      }
+    }
+
+    // 调整自走点视线角度并前进
+    let goalWayVector = Ray.getRayFromPoints(vp.pos, goal).way;
+    if(goalWayVector.mag() > 20){
+      if(!forwardNoIntersection){
+        vp.pos = vp.pos.move(-5, vp.angle);
+        // 绘制阻塞自走点震动效果
+        stroke('#0000ff');
+        point(vp.pos.x, vp.pos.y);
+        vp.pos = vp.pos.move(5, vp.angle);
+        if(leftNoIntersection == rightNoIntersection){
+          vp.angle += PI / 6 * random([-1, 1]);
+        } else if(!leftNoIntersection){
+          vp.angle += PI / 15
+        } else if(!rightNoIntersection){
+          vp.angle -= PI / 15
+        }
+      } else{
+        if(1 - vp.viewLineUnitVector.dotProduct(goalWayVector.unitize()) > 0.01){
+          let dRadian = goalWayVector.angle - vp.angle;
+          let clockwiseRotation = dRadian / abs(dRadian);
+          if(abs(dRadian) < PI){
+            if(clockwiseRotation == 1 && rightNoIntersection
+              || clockwiseRotation == -1 && leftNoIntersection){
+              vp.angle += clockwiseRotation * PI / 15;
+            }
+          } else{
+            if(clockwiseRotation == -1 && rightNoIntersection
+              || clockwiseRotation == 1 && leftNoIntersection){
+              vp.angle -= clockwiseRotation * PI / 15;
+            }
+            if(vp.angle >= 2 * PI){
+              vp.angle -= 2 * PI;
+            }
+            if(vp.angle < 0){
+              vp.angle += 2 * PI;
+            }
           }
         }
+        vp.pos = vp.pos.move(5, vp.angle);
       }
-      vp.pos = vp.pos.move(3, vp.angle);
     }
   }
 
-  strokeWeight(5);
-  line(viewLine.begin.x, viewLine.begin.y, viewLine.end.x, viewLine.end.y);
-  line(leftSensor.begin.x, leftSensor.begin.y, leftSensor.end.x, leftSensor.end.y);
-  line(rightSensor.begin.x, rightSensor.begin.y, rightSensor.end.x, rightSensor.end.y);
+  if(keyIsDown(LEFT_ARROW)){
+    goal.x -= 5;
+  }
+  if(keyIsDown(RIGHT_ARROW)){
+    goal.x += 5;
+  }
+  if(keyIsDown(UP_ARROW)){
+    goal.y -= 5;
+  }
+  if (keyIsDown(DOWN_ARROW)) {
+    goal.y += 5;
+  }
 }
 
 // 目标点拖拽函数
