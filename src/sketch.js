@@ -197,6 +197,7 @@ function draw() {
     }
   }
 
+  // 方向键控制目标点
   if(keyIsDown(LEFT_ARROW)){
     goal.x -= 5;
   }
