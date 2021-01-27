@@ -47,7 +47,7 @@ class Player {
    * 调整速度
    */
   updateSpeed(){
-    this.speed = min(this.score / 2000 + 2, 6)
+    this.speed = min(this.score / 3000 + 2, 6)
   }
 
 }

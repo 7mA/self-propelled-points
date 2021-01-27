@@ -343,9 +343,9 @@ function draw() {
 
 updateEnemyData = function(){
   if(!player.isAlive) return;
-  enemyListMaxLength = player.score / 2000 + 5;
+  enemyListMaxLength = player.score / 2000 + 3;
   enemyLifeSpan = (player.score / 1000 + 5) * 1000;
-  enemySpeed = min(player.score / 2000 + 1, 5);
+  enemySpeed = min(player.score / 3000 + 1, 5);
   player.updateSpeed();
 }
 
