@@ -7,7 +7,6 @@ let horizontalWallList = [];
 let verticalWallList = [];
 
 let player;
-let playerSpeed;
 
 let enemyLifeSpan;
 let enemyListMaxLength;
@@ -17,6 +16,10 @@ let enemySpeed;
 let itemList = [];
 
 let gameStartTime;
+let lastPickUpTime;
+let gameStopTime;
+let remainingTime;
+let intervalTime;
 
 function setup() {
   width = windowWidth * 2 / 3;
@@ -31,11 +34,21 @@ function setup() {
 
   itemList.push(new Vec(random(0, width), random(0, height)));
 
+  gameStartTime = Date.now();
+  lastPickUpTime = Date.now();
+  remainingTime = 15000;
+  intervalTime = 15000;
+
   createCanvas(width, height);
 }
 
 function draw() {
   background(220);
+
+  remainingTime = max(intervalTime - (Date.now() - lastPickUpTime), 0);
+  if(!player.isAlive) {
+    remainingTime = max(intervalTime - (gameStopTime - lastPickUpTime), 0);
+  }
 
   // 初始化角落点
   let leftTopPoint = new Vec(0, 0);
@@ -102,17 +115,23 @@ function draw() {
   // 填充敌人列表
   fillEnemyList();
 
-  let spliceIndexList = [];
   for(let i = 0; i < enemyList.length; i++){
-    if(Date.now() - enemyList[i].generatedTime > enemyList[i].lifeSpan){
+    if(Date.now() - enemyList[i].generatedTime > enemyList[i].lifeSpan && player.isAlive){
+      if(random(-2, 2) > 1){
+        itemList.push(enemyList[i].vp.pos.copy());
+      }
       enemyList.splice(i, 1);
       i--;
+      player.addScoreByEscape();
       continue;
     }
 
     // 绘制自走点
     enemy = enemyList[i];
     stroke(lerpColor(deepBlue, lightBlue, (Date.now() - enemy.generatedTime) / enemy.lifeSpan));
+    if(!player.isAlive){
+      stroke(lerpColor(deepBlue, lightBlue, (gameStopTime - enemy.generatedTime) / enemy.lifeSpan));
+    }
     point(enemy.vp.pos.x, enemy.vp.pos.y);
 
     // 自走点前方视线
@@ -186,7 +205,6 @@ function draw() {
       if(!forwardNoIntersection){
         // 绘制阻塞自走点震动效果
         enemy.vp.pos = enemy.vp.pos.move(-enemySpeed, enemy.vp.angle);
-        stroke(lerpColor(deepBlue, lightBlue, (Date.now() - enemy.generatedTime) / enemy.lifeSpan));
         point(enemy.vp.pos.x, enemy.vp.pos.y);
         enemy.vp.pos = enemy.vp.pos.move(enemySpeed, enemy.vp.angle);
         if(leftNoIntersection == rightNoIntersection){
@@ -220,10 +238,12 @@ function draw() {
         }
         enemy.vp.pos = enemy.vp.pos.move(enemySpeed, enemy.vp.angle);
       }
+    } else {
+      stopGame();
     }
   }
 
-  // 方向键控制目标点
+  // 方向键控制玩家点
   if(keyIsDown(LEFT_ARROW)){
     let flag = true;
     let viewLine = Ray.getRayFromPoints(player.pos, player.pos.move(20, PI));
@@ -233,7 +253,7 @@ function draw() {
       }
     }
     if(flag){
-      player.pos.x -= playerSpeed;
+      player.pos.x -= player.speed;
     }
   }
   if(keyIsDown(RIGHT_ARROW)){
@@ -245,7 +265,7 @@ function draw() {
       }
     }
     if(flag){
-      player.pos.x += playerSpeed;
+      player.pos.x += player.speed;
     }
   }
   if(keyIsDown(UP_ARROW)){
@@ -257,7 +277,7 @@ function draw() {
       }
     }
     if(flag){
-      player.pos.y -= playerSpeed;
+      player.pos.y -= player.speed;
     }
   }
   if(keyIsDown(DOWN_ARROW)){
@@ -269,42 +289,77 @@ function draw() {
       }
     }
     if(flag){
-      player.pos.y += playerSpeed;
+      player.pos.y += player.speed;
     }
   }
 
-  for(let item of itemList){
+  for(let i = 0; i < itemList.length; i++){
+    let item = itemList[i];
+
     // 绘制道具
     stroke('#ff0000');
     point(item.x, item.y);
 
     // 拾捡道具
     if(player.pos.sub(item).mag() < 20){
-      player.addScoreByPickUp(100, 100);
-      let index = itemList.indexOf(item);
-      itemList.splice(index, 1);
+      player.addScoreByPickUp(remainingTime, intervalTime);
+      lastPickUpTime = Date.now();
+      itemList.splice(i, 1);
+      i--;
     }
   }
-
-  text(player.score, 100, 100);
 
   // 场上无道具时，生成新的道具
   if(itemList.length == 0){
     itemList.push(new Vec(random(0, width), random(0, height)));
   }
 
-  // 重新计算敌人难度
+  // 重新计算游戏难度
   updateEnemyData();
+
+  strokeWeight(3);
+  stroke('#fff');
+  text("score: " + player.score, width / 20, height * 2 / 40);
+
+  let duration = Date.now() - gameStartTime;
+  if(!player.isAlive) duration = gameStopTime - gameStartTime;
+  duration = (duration / 1000).toFixed(3);
+  text("Time: " + duration + " s", width / 20, height * 3 / 40);
+
+  if(Date.now() - lastPickUpTime > intervalTime){
+    stopGame();
+  }
+  remainingTime = (remainingTime / 1000).toFixed(3);
+  text("Pick Up Count Down: " + remainingTime + " s", width / 20, height * 4 / 40);
+
+  if(!player.isAlive) {
+    push();
+    textSize(32);
+    textAlign(CENTER);
+    text("Game Over!", width / 2, height / 2);
+    pop();
+  }
 }
 
 updateEnemyData = function(){
+  if(!player.isAlive) return;
   enemyListMaxLength = player.score / 2000 + 5;
   enemyLifeSpan = (player.score / 1000 + 5) * 1000;
   enemySpeed = min(player.score / 2000 + 1, 5);
-  playerSpeed = min(player.score / 2000 + 2, 6);
+  player.updateSpeed();
+}
+
+stopGame = function(){
+  if(player.isAlive){
+    enemySpeed = 0;
+    player.speed = 0;
+    gameStopTime = Date.now();
+  }
+  player.gameOver();
 }
 
 fillEnemyList = function(){
+  if(!player.isAlive) return;
   while(enemyList.length < enemyListMaxLength){
     let enemy = new Enemy(
       new ViewPoint(

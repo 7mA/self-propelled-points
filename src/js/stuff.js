@@ -4,6 +4,7 @@
  * @prop {boolean} isAlive 存活状态
  * @prop {number} score 分数
  * @prop {number} survivalTime 存活时间（秒）
+ * @prop {number} speed 移动速度
  */
 class Player {
 
@@ -16,6 +17,7 @@ class Player {
     this.isAlive = true;
     this.score = 0;
     this.survivalTime = 0;
+    this.speed = 2;
   }
 
   /**
@@ -24,15 +26,14 @@ class Player {
    * @param {number} intervalTime 间隔时间
    */
   addScoreByPickUp(remainingTime, intervalTime){
-    this.score += 100 + 300 * (remainingTime / intervalTime);
-    console.log(this.score);
+    this.score += Number.parseInt(100 + 400 * (remainingTime / intervalTime));
   }
 
   /**
    * 加算摆脱分数
    */
   addScoreByEscape(){
-    this.score += 100;
+    this.score += 50;
   }
 
   /**
@@ -40,6 +41,13 @@ class Player {
    */
   gameOver(){
     this.isAlive = false;
+  }
+
+  /**
+   * 调整速度
+   */
+  updateSpeed(){
+    this.speed = min(this.score / 2000 + 2, 6)
   }
 
 }
