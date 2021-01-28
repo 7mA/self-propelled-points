@@ -1,3 +1,12 @@
+// 敌人对象状态静态变量
+const ENEMY_STATUS_GENERATED = "1";
+const ENEMY_STATUS_ACTIVE = "2";
+const ENEMY_STATUS_EXPIRE = "3";
+
+// 道具对象状态静态变量
+const ITEM_STATUS_GENERATED = "1";
+const ITEM_STATUS_ACTIVE = "2";
+
 /**
  * 玩家类
  * @prop {Vec} pos 位置坐标
@@ -57,6 +66,7 @@ class Player {
  * @prop {ViewPoint} vp 敌人视点
  * @prop {number} generatedTime 生成时间 (ms)
  * @prop {number} lifeSpan 存活时间 (ms)
+ * @prop {string} status 状态 (1:诞生、2:活跃、3:消亡)
  */
 class Enemy{
 
@@ -70,5 +80,26 @@ class Enemy{
     this.vp = vp;
     this.generatedTime = generatedTime;
     this.lifeSpan = lifeSpan;
+    this.status = ITEM_STATUS_GENERATED;
+  }
+}
+
+/**
+ * 道具类
+ * @prop {Vec} pos 位置向量
+ * @prop {number} generatedTime 生成时间 (ms)
+ * @prop {string} status 状态 (1:诞生、2:活跃)
+ */
+class Item{
+
+  /**
+   * 构建敌人类
+   * @param {Vec} pos 位置向量
+   * @param {number} generatedTime 生成时间 (ms)
+   */
+  constructor(pos, generatedTime){
+    this.pos = pos;
+    this.generatedTime = generatedTime;
+    this.status = ENEMY_STATUS_GENERATED;
   }
 }

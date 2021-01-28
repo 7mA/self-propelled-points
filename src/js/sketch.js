@@ -19,7 +19,7 @@ let gameStartTime;
 let lastPickUpTime;
 let gameStopTime;
 let remainingTime;
-let intervalTime;
+const intervalTime = 15000;
 
 function setup() {
   width = windowWidth * 2 / 3;
@@ -32,12 +32,11 @@ function setup() {
   updateEnemyData();
   fillEnemyList();
 
-  itemList.push(new Vec(random(0, width), random(0, height)));
+  itemList.push(new Item(new Vec(random(0, width), random(0, height)), getCurrentTime()));
 
   gameStartTime = Date.now();
   lastPickUpTime = Date.now();
-  remainingTime = 15000;
-  intervalTime = 15000;
+  remainingTime = intervalTime;
 
   createCanvas(width, height);
 }
@@ -45,10 +44,7 @@ function setup() {
 function draw() {
   background(220);
 
-  remainingTime = max(intervalTime - (Date.now() - lastPickUpTime), 0);
-  if(!player.isAlive) {
-    remainingTime = max(intervalTime - (gameStopTime - lastPickUpTime), 0);
-  }
+  remainingTime = max(intervalTime - (getCurrentTime() - lastPickUpTime), 0);
 
   // 初始化角落点
   let leftTopPoint = new Vec(0, 0);
@@ -116,13 +112,23 @@ function draw() {
     let item = itemList[i];
 
     // 绘制道具
+    if(item.status == ITEM_STATUS_GENERATED && (getCurrentTime() - item.generatedTime) / 500 > 1){
+      item.status = ITEM_STATUS_ACTIVE;
+    }
     stroke('#ff0000');
-    point(item.x, item.y);
+    if(item.status == ITEM_STATUS_GENERATED){
+      push();
+      strokeWeight((getCurrentTime() - item.generatedTime) / 500 * 20);
+      point(item.pos.x, item.pos.y);
+      pop();
+      continue;
+    }
+    point(item.pos.x, item.pos.y);
 
     // 拾捡道具
-    if(player.pos.sub(item).mag() < 20){
+    if(player.pos.sub(item.pos).mag() < 20){
       player.addScoreByPickUp(remainingTime, intervalTime);
-      lastPickUpTime = Date.now();
+      lastPickUpTime = getCurrentTime();
       itemList.splice(i, 1);
       i--;
     }
@@ -130,7 +136,7 @@ function draw() {
 
   // 场上无道具时，生成新的道具
   if(itemList.length == 0){
-    itemList.push(new Vec(random(0, width), random(0, height)));
+    itemList.push(new Item(new Vec(random(0, width), random(0, height)), getCurrentTime()));
   }
 
   // 填充敌人列表
@@ -139,7 +145,7 @@ function draw() {
   for(let i = 0; i < enemyList.length; i++){
     if(Date.now() - enemyList[i].generatedTime > enemyList[i].lifeSpan && player.isAlive){
       if(random(-2, 2) > 1){
-        itemList.push(enemyList[i].vp.pos.copy());
+        itemList.push(new Item(enemyList[i].vp.pos.copy(), getCurrentTime()));
       }
       enemyList.splice(i, 1);
       i--;
@@ -149,11 +155,27 @@ function draw() {
 
     // 绘制自走点
     enemy = enemyList[i];
-    stroke(lerpColor(deepBlue, lightBlue, (Date.now() - enemy.generatedTime) / enemy.lifeSpan));
-    if(!player.isAlive){
-      stroke(lerpColor(deepBlue, lightBlue, (gameStopTime - enemy.generatedTime) / enemy.lifeSpan));
+    if(enemy.status == ENEMY_STATUS_GENERATED && (getCurrentTime() - enemy.generatedTime) / 500 > 1){
+      enemy.status = ENEMY_STATUS_ACTIVE;
+    }if(enemy.status == ENEMY_STATUS_ACTIVE && (enemy.lifeSpan - (getCurrentTime() - enemy.generatedTime)) / 500 < 1){
+      enemy.status = ENEMY_STATUS_EXPIRE;
     }
-    point(enemy.vp.pos.x, enemy.vp.pos.y);
+    stroke(lerpColor(deepBlue, lightBlue, (getCurrentTime() - enemy.generatedTime) / enemy.lifeSpan));
+    if(enemy.status == ENEMY_STATUS_GENERATED){
+      push();
+      strokeWeight((getCurrentTime() - enemy.generatedTime) / 500 * 20);
+      point(enemy.vp.pos.x, enemy.vp.pos.y);
+      pop();
+      continue;
+    } else if(enemy.status == ENEMY_STATUS_EXPIRE){
+      push();
+      strokeWeight((enemy.lifeSpan - (getCurrentTime() - enemy.generatedTime)) / 500 * 20);
+      point(enemy.vp.pos.x, enemy.vp.pos.y);
+      pop();
+      continue;
+    } else {
+      point(enemy.vp.pos.x, enemy.vp.pos.y);
+    }
 
     // 自走点前方视线
     let viewLine = Ray.getRayFromPoints(
@@ -319,10 +341,9 @@ function draw() {
 
   strokeWeight(3);
   stroke('#fff');
-  text("score: " + player.score, width / 20, height * 2 / 40);
+  text("Score: " + player.score, width / 20, height * 2 / 40);
 
-  let duration = Date.now() - gameStartTime;
-  if(!player.isAlive) duration = gameStopTime - gameStartTime;
+  let duration = getCurrentTime() - gameStartTime;
   duration = (duration / 1000).toFixed(3);
   text("Time: " + duration + " s", width / 20, height * 3 / 40);
 
@@ -336,6 +357,7 @@ function draw() {
     push();
     textSize(32);
     textAlign(CENTER);
+    fill('#ff0000');
     text("Game Over!", width / 2, height / 2);
     pop();
   }
@@ -355,7 +377,7 @@ stopGame = function(){
     player.speed = 0;
     gameStopTime = Date.now();
   }
-  player.gameOver();
+  player.isAlive = false;
 }
 
 fillEnemyList = function(){
@@ -370,6 +392,11 @@ fillEnemyList = function(){
         enemyLifeSpan + random(-1000, 1000));
     enemyList.push(enemy);
   }
+}
+
+getCurrentTime = function(){
+  if(!player.isAlive) return gameStopTime;
+  return Date.now();
 }
 
 // 玩家点拖拽函数
