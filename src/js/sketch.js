@@ -112,6 +112,27 @@ function draw() {
   strokeWeight(20);
   point(player.pos.x, player.pos.y);
 
+  for(let i = 0; i < itemList.length; i++){
+    let item = itemList[i];
+
+    // 绘制道具
+    stroke('#ff0000');
+    point(item.x, item.y);
+
+    // 拾捡道具
+    if(player.pos.sub(item).mag() < 20){
+      player.addScoreByPickUp(remainingTime, intervalTime);
+      lastPickUpTime = Date.now();
+      itemList.splice(i, 1);
+      i--;
+    }
+  }
+
+  // 场上无道具时，生成新的道具
+  if(itemList.length == 0){
+    itemList.push(new Vec(random(0, width), random(0, height)));
+  }
+
   // 填充敌人列表
   fillEnemyList();
 
@@ -291,27 +312,6 @@ function draw() {
     if(flag){
       player.pos.y += player.speed;
     }
-  }
-
-  for(let i = 0; i < itemList.length; i++){
-    let item = itemList[i];
-
-    // 绘制道具
-    stroke('#ff0000');
-    point(item.x, item.y);
-
-    // 拾捡道具
-    if(player.pos.sub(item).mag() < 20){
-      player.addScoreByPickUp(remainingTime, intervalTime);
-      lastPickUpTime = Date.now();
-      itemList.splice(i, 1);
-      i--;
-    }
-  }
-
-  // 场上无道具时，生成新的道具
-  if(itemList.length == 0){
-    itemList.push(new Vec(random(0, width), random(0, height)));
   }
 
   // 重新计算游戏难度
