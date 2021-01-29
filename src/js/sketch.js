@@ -1,50 +1,16 @@
-let width;
-let height;
-let deepBlue;
-let lightBlue;
-
-let horizontalWallList = [];
-let verticalWallList = [];
-
-let player;
-
-let enemyLifeSpan;
-let enemyListMaxLength;
-let enemyList = [];
-let enemySpeed;
-
-let itemList = [];
-
-let gameStartTime;
-let lastPickUpTime;
-let gameStopTime;
-let remainingTime;
-const intervalTime = 15000;
-
 function setup() {
   width = windowWidth * 2 / 3;
   height = windowHeight * 2 / 3;
-  deepBlue = color('#0000ff');
-  lightBlue = color('#0099FF');
-
-  player = new Player(new Vec(width / 2, height / 2));
-
-  updateEnemyData();
-  fillEnemyList();
-
-  itemList.push(new Item(new Vec(random(0, width), random(0, height)), getCurrentTime()));
-
-  gameStartTime = Date.now();
-  lastPickUpTime = Date.now();
-  remainingTime = intervalTime;
+  generatedEnemyColor = color('#0000ff');
+  expiringEnemyColor = color('#0099FF');
+  itemColor = color('#ff0000');
+  playerColor = color('#ffff00');
 
   createCanvas(width, height);
 }
 
 function draw() {
   background(220);
-
-  remainingTime = max(intervalTime - (getCurrentTime() - lastPickUpTime), 0);
 
   // 初始化角落点
   let leftTopPoint = new Vec(0, 0);
@@ -103,11 +69,14 @@ function draw() {
     line(vw.begin.x, vw.begin.y, vw.end.x, vw.end.y);
   }
 
-  // 绘制目标点
-  stroke('#ffff00');
+  if(!isGameStart) return;
+
+  // 绘制玩家点
+  stroke(playerColor);
   strokeWeight(20);
   point(player.pos.x, player.pos.y);
 
+  remainingTime = max(intervalTime - (getCurrentTime() - lastPickUpTime), 0);
   for(let i = 0; i < itemList.length; i++){
     let item = itemList[i];
 
@@ -115,7 +84,7 @@ function draw() {
     if(item.status == ITEM_STATUS_GENERATED && (getCurrentTime() - item.generatedTime) / 500 > 1){
       item.status = ITEM_STATUS_ACTIVE;
     }
-    stroke('#ff0000');
+    stroke(itemColor);
     if(item.status == ITEM_STATUS_GENERATED){
       push();
       strokeWeight((getCurrentTime() - item.generatedTime) / 500 * 20);
@@ -153,21 +122,21 @@ function draw() {
       continue;
     }
 
-    // 绘制自走点
+    // 绘制敌人
     enemy = enemyList[i];
     if(enemy.status == ENEMY_STATUS_GENERATED && (getCurrentTime() - enemy.generatedTime) / 500 > 1){
       enemy.status = ENEMY_STATUS_ACTIVE;
     }if(enemy.status == ENEMY_STATUS_ACTIVE && (enemy.lifeSpan - (getCurrentTime() - enemy.generatedTime)) / 500 < 1){
-      enemy.status = ENEMY_STATUS_EXPIRE;
+      enemy.status = ENEMY_STATUS_EXPIRING;
     }
-    stroke(lerpColor(deepBlue, lightBlue, (getCurrentTime() - enemy.generatedTime) / enemy.lifeSpan));
+    stroke(lerpColor(generatedEnemyColor, expiringEnemyColor, (getCurrentTime() - enemy.generatedTime) / enemy.lifeSpan));
     if(enemy.status == ENEMY_STATUS_GENERATED){
       push();
       strokeWeight((getCurrentTime() - enemy.generatedTime) / 500 * 20);
       point(enemy.vp.pos.x, enemy.vp.pos.y);
       pop();
       continue;
-    } else if(enemy.status == ENEMY_STATUS_EXPIRE){
+    } else if(enemy.status == ENEMY_STATUS_EXPIRING){
       push();
       strokeWeight((enemy.lifeSpan - (getCurrentTime() - enemy.generatedTime)) / 500 * 20);
       point(enemy.vp.pos.x, enemy.vp.pos.y);
@@ -177,31 +146,31 @@ function draw() {
       point(enemy.vp.pos.x, enemy.vp.pos.y);
     }
 
-    // 自走点前方视线
+    // 敌人前方视线
     let viewLine = Ray.getRayFromPoints(
       enemy.vp.pos,
       enemy.vp.pos.move(30, enemy.vp.angle)
     )
 
-    // 自走点左侧视线
+    // 敌人左侧视线
     let leftViewLine = Ray.getRayFromPoints(
       enemy.vp.pos,
       enemy.vp.pos.move(30, enemy.vp.angle - PI / 6)
     )
 
-    // 自走点右侧视线
+    // 敌人右侧视线
     let rightViewLine = Ray.getRayFromPoints(
       enemy.vp.pos,
       enemy.vp.pos.move(30, enemy.vp.angle + PI / 6)
     )
 
-    // 自走点左侧传感器
+    // 敌人左侧传感器
     let leftSensor = Ray.getRayFromPoints(
       enemy.vp.pos,
       enemy.vp.pos.move(50, enemy.vp.angle - PI / 6)
     )
 
-    // 自走点右侧传感器
+    // 敌人右侧传感器
     let rightSensor = Ray.getRayFromPoints(
       enemy.vp.pos,
       enemy.vp.pos.move(50, enemy.vp.angle + PI / 6)
@@ -242,7 +211,7 @@ function draw() {
       }
     }
 
-    // 调整自走点视线角度并前进
+    // 调整敌人视线角度并前进
     let playerWayVector = Ray.getRayFromPoints(enemy.vp.pos, player.pos).way;
     if(playerWayVector.mag() > 20){
       if(!forwardNoIntersection){
@@ -282,7 +251,7 @@ function draw() {
         enemy.vp.pos = enemy.vp.pos.move(enemySpeed, enemy.vp.angle);
       }
     } else {
-      stopGame();
+      stopGame(GAME_OVER_BY_TOUCH_ENEMY);
     }
   }
 
@@ -347,56 +316,14 @@ function draw() {
   duration = (duration / 1000).toFixed(3);
   text("Time: " + duration + " s", width / 20, height * 3 / 40);
 
-  if(Date.now() - lastPickUpTime > intervalTime){
-    stopGame();
+  if(getCurrentTime() - lastPickUpTime > intervalTime){
+    stopGame(GAME_OVER_BY_HUNGRY_FOR_ITEM);
   }
   remainingTime = (remainingTime / 1000).toFixed(3);
-  text("Pick Up Count Down: " + remainingTime + " s", width / 20, height * 4 / 40);
-
-  if(!player.isAlive) {
-    push();
-    textSize(32);
-    textAlign(CENTER);
-    fill('#ff0000');
-    text("Game Over!", width / 2, height / 2);
-    pop();
-  }
-}
-
-updateEnemyData = function(){
-  if(!player.isAlive) return;
-  enemyListMaxLength = player.score / 2000 + 3;
-  enemyLifeSpan = (player.score / 1000 + 5) * 1000;
-  enemySpeed = min(player.score / 3000 + 1, 5);
-  player.updateSpeed();
-}
-
-stopGame = function(){
-  if(player.isAlive){
-    enemySpeed = 0;
-    player.speed = 0;
-    gameStopTime = Date.now();
-  }
-  player.isAlive = false;
-}
-
-fillEnemyList = function(){
-  if(!player.isAlive) return;
-  while(enemyList.length < enemyListMaxLength){
-    let enemy = new Enemy(
-      new ViewPoint(
-        new Vec(random(0, width),
-          random(0, height)),
-        random(0, 2 * PI)),
-        Date.now(),
-        enemyLifeSpan + random(-1000, 1000));
-    enemyList.push(enemy);
-  }
-}
-
-getCurrentTime = function(){
-  if(!player.isAlive) return gameStopTime;
-  return Date.now();
+  push();
+  if(remainingTime < 5) fill('#f00');
+  text("Touch the Red in: " + remainingTime + " s", width / 20, height * 4 / 40);
+  pop();
 }
 
 // 玩家点拖拽函数

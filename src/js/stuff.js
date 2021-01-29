@@ -1,11 +1,15 @@
 // 敌人对象状态静态变量
 const ENEMY_STATUS_GENERATED = "1";
 const ENEMY_STATUS_ACTIVE = "2";
-const ENEMY_STATUS_EXPIRE = "3";
+const ENEMY_STATUS_EXPIRING = "3";
 
 // 道具对象状态静态变量
 const ITEM_STATUS_GENERATED = "1";
 const ITEM_STATUS_ACTIVE = "2";
+
+// 游戏结束原因
+const GAME_OVER_BY_TOUCH_ENEMY = "1";
+const GAME_OVER_BY_HUNGRY_FOR_ITEM = "2";
 
 /**
  * 玩家类
@@ -43,13 +47,6 @@ class Player {
    */
   addScoreByEscape(){
     this.score += 50;
-  }
-
-  /**
-   * 游戏结束
-   */
-  gameOver(){
-    this.isAlive = false;
   }
 
   /**

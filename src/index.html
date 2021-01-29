@@ -5,11 +5,35 @@
     <script src="https://cdn.jsdelivr.net/npm/linear-algebra-js-lib@1.2.2/src/linear-algebra-lib.min.js"></script>
     <!-- <script src="js/linear-algebra-lib.js"></script> -->
     <script src="js/stuff.js"></script>
+    <script src="js/status.js"></script>
     <link rel="stylesheet" type="text/css" href="css/style.css">
     <meta charset="utf-8" />
 
   </head>
   <body>
+
+    <div class="dialog" id="readyDialog">
+      <div class="dialog-inside-container">
+        <p class="dialog-title">Self-propelled Points</p>
+      </div>
+      <p>You should:</p>
+      <p>1. run away from the blue!</p>
+      <p>2. touch the red!</p>
+      <div class="dialog-inside-container">
+        <input class="block-vertical-align-center start-button" type="button" value="Start!" onclick="startGame()" />
+      </div>
+    </div>
+
+    <div class="dialog" id="retryDialog" style="display: none">
+      <div class="game-over-container block-vertical-align-center">
+        <p class="dialog-title">Game Over!</p>
+        <p id="gameOverReason"></p>
+        <p>Score: <span id="gameOverScore"></span></p>
+        <p>Time: <span id="gameOverTime"></span>s</p>
+        <input type="button" class="retry-button" value="Retry!" onclick="retryGame()" />
+      </div>
+    </div>
+
     <script src="js/sketch.js"></script>
   </body>
 </html>
