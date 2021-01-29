@@ -325,10 +325,3 @@ function draw() {
   text("Touch the Red in: " + remainingTime + " s", width / 20, height * 4 / 40);
   pop();
 }
-
-// 玩家点拖拽函数
-// Debug用
-// function touchMoved(event){
-//   player.pos.x = event.clientX - windowWidth / 6;
-//   player.pos.y = event.clientY - windowHeight / 6;
-// }
