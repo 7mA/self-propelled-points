@@ -108,3 +108,13 @@ getCurrentTime = function(){
   if(!player.isAlive) return gameStopTime;
   return Date.now();
 }
+
+backToBetween0To2Pi = function(angle){
+  while(angle >= 2 * PI){
+    angle -= 2 * PI;
+  }
+  while(angle < 0){
+    angle += 2 * PI;
+  }
+  return angle;
+}

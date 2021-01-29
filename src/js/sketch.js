@@ -112,7 +112,7 @@ function draw() {
   fillEnemyList();
 
   for(let i = 0; i < enemyList.length; i++){
-    if(Date.now() - enemyList[i].generatedTime > enemyList[i].lifeSpan && player.isAlive){
+    if(getCurrentTime() - enemyList[i].generatedTime > enemyList[i].lifeSpan && player.isAlive){
       if(random(-2, 2) > 1){
         itemList.push(new Item(enemyList[i].vp.pos.copy(), getCurrentTime()));
       }
@@ -226,6 +226,7 @@ function draw() {
         } else if(!rightNoIntersection){
           enemy.vp.angle -= PI / 15
         }
+        enemy.vp.angle = backToBetween0To2Pi(enemy.vp.angle);
       } else{
         if(1 - enemy.vp.viewLineUnitVector.dotProduct(playerWayVector.unitize()) > 0.01){
           let dRadian = playerWayVector.angle - enemy.vp.angle;
@@ -240,13 +241,8 @@ function draw() {
               || clockwiseRotation == 1 && leftNoIntersection){
               enemy.vp.angle -= clockwiseRotation * PI / 15;
             }
-            if(enemy.vp.angle >= 2 * PI){
-              enemy.vp.angle -= 2 * PI;
-            }
-            if(enemy.vp.angle < 0){
-              enemy.vp.angle += 2 * PI;
-            }
           }
+          enemy.vp.angle = backToBetween0To2Pi(enemy.vp.angle);
         }
         enemy.vp.pos = enemy.vp.pos.move(enemySpeed, enemy.vp.angle);
       }
